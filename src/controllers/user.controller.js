@@ -25,33 +25,33 @@ const userRegister = asyncHandler(async (req, res) => {
     }
     //cheack user already exist or not
 
-    const existUser = User.findOne({
+    const existUser = await User.findOne({
         $or: [{ username }, { email }]
     })
     if (existUser) {
         throw new Apierror(409, "username with email already exist")
     }
-    // get local path of the coverimage and avatar
+    //get local path of the coverimage and avatar
     const avatarLocalpath = req.files?.avatar[0]?.path;
-    const coverImageLocalPath = req.files?.coverImage?.path;
+    console.log(avatarLocalpath);
+    const coverImageLocalPath = req.files?.coverImage[0]?.path;
     if (!avatarLocalpath) {
         throw new Apierror(400, "avatar is required")
     }
     // upload on cludinary
     const avatar = await uploadOncloudinary(avatarLocalpath)
-    const coverimage = await uploadOncloudinary(coverImageLocalPath)
+    const coverImage = await uploadOncloudinary(coverImageLocalPath)
     if (!avatar) {
         throw new Apierror(409, "username with email already exist")
     }
     //  create user 
-
-    const user = User.create({
+    const user = await User.create({
         fullname,
         email,
         username: username.toLowerCase(),
         password,
-        avatar: avatar.url,
-        coverimage: coverimage?.url || ""
+        avatar:   avatar.url,
+        coverImage: coverImage?.url || ""
     })
     // remove password and referesh token 
     const createUser = await User.findById(user._id).select(
