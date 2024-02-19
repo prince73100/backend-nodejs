@@ -136,39 +136,106 @@ const logOutUser = asyncHandler(async (req, res) => {
 // access refresh token
 const refreshAccessTokens = asyncHandler(async (req, res) => {
     const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
-    if (incomingRefreshToken) {
+    if (!incomingRefreshToken) {
         throw new Apierror(401, "unauthrizred request")
     }
     try {
         const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET)
         const user = await User.findById(decodedToken?._id)
-    
+
         if (!user) {
             throw new Apierror(401, "invalid refresh token")
         }
         if (incomingRefreshToken !== user.refereshToken) {
             throw new Apierror(401, "refresh token is expired or used")
         }
-        
-        const option =  {
-            httpOnlty:true,
-            secure:true
+
+        const option = {
+            httpOnlty: true,
+            secure: true
         }
-      const {accessToken,refreshToken}  =  await genereateAccessAndRfreshToken(user._id)
+        const { accessToken, refreshToken } = await genereateAccessAndRfreshToken(user._id)
         return res
-        .status(200)
-        .cookie("accessToken",accessToken,option)
-        .cookie("refreshToken",refreshToken,option)
-        .json(new AptResponse(200,"Accessed Token refresh successfully"))
+            .status(200)
+            .cookie("accessToken", accessToken, option)
+            .cookie("refreshToken", refreshToken, option)
+            .json(new AptResponse(200, "Accessed Token refresh successfully"))
     } catch (error) {
-        throw new Apierror(401,error?.message || "invalid token")
+        throw new Apierror(401, error?.message || "invalid token")
     }
 
+})
+
+// change password
+const changeCurrentPassword = asyncHandler(async (req, res) => {
+    const { oldPassword, newPassword } = req.body
+    const user = await User.findById(req.user._id)
+    const isPasswordCurrect = await user.ispasswordCorrect(oldPassword)
+    if (!isPasswordCurrect) {
+        throw new Apierror(400, "Invalid password")
+    }
+    user.password = newPassword
+    await user.save({ validateBeforeSave: false })
+    return res.status(200).json(new AptResponse(200, "Password Changed Successfully"))
+
+})
+// get current user
+
+const getCurrentuser = asyncHandler(async (req, res) => {
+    return res.status(200).json(200, req.user, "current user fetch successfully")
+})
+// update Account detail
+
+const updateAccountDetail = asyncHandler(async (req, res) => {
+    const { fullname, email } = req.body
+    if (!fullname || !email) {
+        throw new Apierror(400, "All field are required")
+    }
+    const user = await User.findByIdAndUpdate(req.user_id, {
+        $set: {
+            fullname,
+            email
+        }
+    }, { new: true }).select("-password")
+    return res.status(200).json(200, user, "Account details Updated Successfully")
+})
+// update avatar
+const updateUseravatar = asyncHandler(async (req, res) => {
+    const avatarLocalPath = req.file?.path
+    if(!avatarLocalPath){
+        throw new Apierror(400,"Avatar file is missing")
+    }
+    const avatar = await uploadOncloudinary(avatarLocalPath)
+    if(!avatar.url){
+        throw new Apierror(400,"Error while Uploading on avatar")
+    }
+   const user =await User.findByIdAndUpdate(req.user?._id,{$set:{avatar:avatar.url}},{new:true}).select("-password")
+  return res.status(200).json(new AptResponse(200,user,"coverImage update Successfully"))
+
+})
+
+// upadate user Cover Image
+const updateUserCoverImage = asyncHandler(async (req,res)=>{
+  const coverImageLocalPath =   req.file?.path
+  if (!coverImageLocalPath) {
+    throw new Apierror(400,"Cover-Image is missing")
+  }
+  const coverImage = await uploadOncloudinary(coverImageLocalPath)
+  if(!coverImage.url){
+    throw new Apierror(400,"while update Cover-Image is misssing")
+  }
+ const user =  await User.findByIdAndUpdate(req.user?._id,{$set:{coverImage:coverImage.url}},{new:true}).select("-password")
+  return res.status(200).json(new AptResponse(200,user,"coverImage update Successfully"))
 })
 
 export {
     loginUser,
     userRegister,
     logOutUser,
-    refreshAccessTokens
+    refreshAccessTokens,
+    changeCurrentPassword,
+    getCurrentuser,
+    updateAccountDetail,
+    updateUseravatar,
+    updateUserCoverImage
 }
