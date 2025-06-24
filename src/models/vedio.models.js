@@ -19,7 +19,6 @@ const vedioSchema = new mongoose.Schema({
     },
     duration:{
         type:Number,
-        required:true
     },
     views:{
         type:Number,
@@ -30,7 +29,7 @@ const vedioSchema = new mongoose.Schema({
         default:true
     },
     owner:{
-        type:mongoose.Schema.Types.ObjectId,
+        type: mongoose.Schema.Types.ObjectId,
         ref:"User"
     }
 },{timestamps:true})

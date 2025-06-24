@@ -17,7 +17,10 @@ app.use(express.static("public"))
 app.use(cookieparser())
 
 import userRouter from "./routes/user.routes.js";
+import vedioRouter from './routes/vedio.router.js';
 
 app.use("/api/v1/users",userRouter)
+
+app.use("/api/v1/vedio",vedioRouter)
 
 export default app;
